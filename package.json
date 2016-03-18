@@ -1,0 +1,11 @@
+{
+  "name": "stock-service",
+  "version": "0.0.1",
+  "description": "Gets and stores stock info from oslo børs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Håvard Rustad Olsen",
+  "license": "ISC"
+}
