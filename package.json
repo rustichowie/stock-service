@@ -16,5 +16,8 @@
     "node-rest-client": "^1.8.0",
     "request": "^2.69.0",
     "unirest": "^0.4.2"
+  },
+  "devDependencies": {
+    "q": "^1.4.1"
   }
 }

@@ -4,15 +4,32 @@ var options = require('./config/index');
 var Stock = require('./models/Stock');
 var async = require('async');
 mongoose.connect('mongodb://localhost/stocks');
-request(options.storageConfig.osloStockExchange.stockList, function(error, response, body){
+
+if(process.argv.length > 2 && process.argv[2] === "init"){
+  request(options.storageConfig.osloStockExchange.stockList, function(error, response, body){
   if (!error && response.statusCode == 200) {
     var json = JSON.parse(body);
-    Stock.populateDb(json, function(){
-      process.exit(0);
+    Stock.initDb(json, function(done){
+      console.log(done);
+      if(done){
+        process.exit(0);
+
+      }
     });
 
+  } else {
+    console.log(error)
   }
 });
+} else {
+  Stock.fetchNewData(function(done){
+    console.log(done);
+    if(done){
+      process.exit(0);
+    }
+  });
+}
+
 
 //console.log(Request);
   /*.end(function(data, response) {
