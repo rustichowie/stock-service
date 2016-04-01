@@ -37,7 +37,6 @@ stockSchema.statics.initDb = function(json, callback){
     }}, {upsert: true}, function(err) {
       if (err) throw err;
 
-      console.log("hmm");
     });
 
   }
@@ -45,21 +44,17 @@ stockSchema.statics.initDb = function(json, callback){
 };
 
 
-var afterAllTasks = function(err){
-  console.log(err);
-  process.exit(0);
-}
+
 
 stockSchema.statics.fetchNewData = function(callback){
-  console.log("finding stocks");
   this.find({}, '_id key label sector').exec(function(err, stocks){
     if(stocks && stocks.length > 0){
-      console.log("Found: " + stocks.length + " stocks");
+      logger.info("Found: " + stocks.length + " stocks");
       var count = 0;
-      async.forEach(stocks.slice(0, 1), processTask, afterAllTasks);
+      async.forEach(stocks, processTask, afterAllTasks);
 
     } else {
-      console.log("found 0 stocks");
+      logger.warn("found 0 stocks");
 
     }
 
@@ -72,26 +67,29 @@ stockSchema.statics.fetchNewData = function(callback){
 
 
 stockSchema.statics.fetchDataForStock = function(stock, callback){
-  console.log("Started fetchDataForStock: " + stock);
+  logger.info("Started fetchDataForStock: " + stock.key);
   request(options.storageConfig.osloStockExchange.daily + stock.key + "?points=500", function(error, response, body){
     if (!error && response.statusCode == 200) {
 
       var json = JSON.parse(body);
-      console.log("got stockData: " + json);
       var seriesJson = json.rows[0].values.series.s1;
       var dataSerie = {
         size: seriesJson.dataSize,
         pruneBucketSeconds: seriesJson.pruneBucketSeconds,
         data: seriesJson.data
       }
-      stock.update({$push: {dataSeries: dataSerie}}, function(err, raw){
-        if(err)
-          console.log("Saved Stock");
+      stock.update({$push: {dataSeries: dataSerie}}, function(innerError, raw){
+        if(innerError){
+          logger.error(innerError);
+        } else {
+          logger.info("Saved Stock");
+        }
+
           callback(error, raw);
       });
 
     } else {
-      console.log("error occured stockData: " + error);
+      logger.error(error);
       callback(error, null);
     }
 
@@ -102,15 +100,26 @@ stockSchema.statics.fetchDataForStock = function(stock, callback){
 // the schema is useless so far
 // we need to create a model using it
 var Stock = mongoose.model('Stock', stockSchema);
+
+
+//Task management
 var processTask = function(stock, callback){
   Stock.fetchDataForStock(stock, function(error, raw){
-    //var last = i >= stocks.length;
-    console.log("Finished fetchDataForStock: ");
+    if(error){
+      logger.error(error);
+    } else {
+      logger.info("Fetched new data series for stock: " + stock.key);
+    }
     callback(error);
-
 
   });
 }
-
+var afterAllTasks = function(error){
+  if(error){
+    logger.error(error);
+  }
+  logger.info("Finished fetching stock data")
+  process.exit(0);
+}
 // make this available to our users in our Node applications
 module.exports = Stock;

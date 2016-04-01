@@ -1,15 +1,15 @@
-var fs = require('fs');
 var options = require('../config/index').storageConfig;
+var winston = require('winston');
 
+var logger = new (winston.Logger)({
+  transports: [
+    new winston.transports.File({ filename: options.logger.logFile, timestamp: true, json: false })
+  ],
+  exceptionHandlers: [
+    new (winston.transports.Console)({ json: false, timestamp: true }),
+    new winston.transports.File({ filename: options.logger.logFile, json: false })
+  ],
+  exitOnError: false
+});
 
-module.exports.log = function(level, msg){
-  var string = "["+level.toUpperCase()+"] - "+ Date.now + ": " + msg;
-  fs.writeFile(options.logger.fileName,string, function(error){
-    if(error) {
-      console.error(error.message);
-    } else {
-      console.log("successful log");
-    }
-
-  })
-};
+module.exports = logger;
